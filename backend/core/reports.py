@@ -109,9 +109,15 @@ def render_monthly_pdf_bytes(call_logs_qs, title: str) -> bytes:
         lines.append(s)
         return lines
 
+    def safe_draw(canvas_obj, x, y, text):
+        # ReportLab's internal font Helvetica doesn't support emojis/UTF-8 out of the box.
+        # Enforcing cp1252/latin-1 encoding avoids hard application crashes.
+        safe_text = str(text).encode("cp1252", "replace").decode("cp1252")
+        canvas_obj.drawString(x, y, safe_text)
+
     def draw_header():
         c.setFont("Helvetica-Bold", 14)
-        c.drawString(20 * mm, height - 20 * mm, title)
+        safe_draw(c, 20 * mm, height - 20 * mm, title)
         c.setFont("Helvetica", 9)
 
     draw_header()
@@ -130,13 +136,18 @@ def render_monthly_pdf_bytes(call_logs_qs, title: str) -> bytes:
             f"Esc:{cl.escalation_level}"
         )
         c.setFont("Helvetica-Bold", 9)
-        c.drawString(20 * mm, y, header)
+        safe_draw(c, 20 * mm, y, header)
         y -= line_h
 
         c.setFont("Helvetica", 9)
         timeline = _format_timeline(events_by_id.get(cl.id, [])) or "(none)"
         for line in wrap("Timeline: " + timeline, max_chars=120):
-            c.drawString(20 * mm, y, line)
+            if y < 20 * mm:
+                c.showPage()
+                draw_header()
+                y = height - 30 * mm
+                c.setFont("Helvetica", 9)
+            safe_draw(c, 20 * mm, y, line)
             y -= line_h
 
         y -= 2 * mm
