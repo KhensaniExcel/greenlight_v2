@@ -34,6 +34,7 @@ export default function TasksPage() {
     // form
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState(null);
+    const [imageFile, setImageFile] = useState(null);
     const [form, setForm] = useState({
         precinct: "",
         task_type: "",
@@ -83,6 +84,7 @@ export default function TasksPage() {
 
     function openNew() {
         setEditId(null);
+        setImageFile(null);
         setForm({
             precinct: "",
             task_type: "",
@@ -99,6 +101,7 @@ export default function TasksPage() {
 
     function openEdit(t) {
         setEditId(t.id);
+        setImageFile(null);
         setForm({
             precinct: t.precinct || "",
             task_type: t.task_type || "",
@@ -119,15 +122,23 @@ export default function TasksPage() {
         if (!form.precinct) { setError("Precinct is required."); return; }
         if (!form.task_type.trim()) { setError("Task type is required."); return; }
         setBusy(true);
-        const body = { ...form };
-        if (!body.call_log) delete body.call_log;
-        if (!body.service_provider_engagement) delete body.service_provider_engagement;
-        if (!body.due_date) body.due_date = null;
+
+        const payload = new FormData();
+        payload.append("precinct", form.precinct);
+        payload.append("task_type", form.task_type);
+        payload.append("status", form.status);
+        if (form.description) payload.append("description", form.description);
+        if (form.sharepoint_link) payload.append("sharepoint_link", form.sharepoint_link);
+        if (form.due_date) payload.append("due_date", form.due_date);
+        if (form.call_log) payload.append("call_log", form.call_log);
+        if (form.service_provider_engagement) payload.append("service_provider_engagement", form.service_provider_engagement);
+        if (imageFile) payload.append("attached_image", imageFile);
+
         try {
             if (editId) {
-                await updateTask(editId, body);
+                await updateTask(editId, payload);
             } else {
-                await createTask(body);
+                await createTask(payload);
             }
             setShowForm(false);
             await load();
@@ -247,6 +258,10 @@ export default function TasksPage() {
                                 <div className="label">Engagement ID (optional)</div>
                                 <input type="number" value={form.service_provider_engagement} onChange={(e) => set("service_provider_engagement", e.target.value)} placeholder="Leave blank if not linked" />
                             </div>
+                            <div>
+                                <div className="label">Attach Image (optional)</div>
+                                <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} style={{ padding: "8px 0" }} />
+                            </div>
                             <div style={{ display: "flex", gap: 8 }}>
                                 <button className="btn primary" type="submit" disabled={busy}>
                                     {busy ? "Saving..." : "Save"}
@@ -275,11 +290,18 @@ export default function TasksPage() {
                                 {t.sharepoint_link && (
                                     <div style={{ marginTop: 4 }}>
                                         <a href={t.sharepoint_link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: "var(--accent)", textDecoration: "none" }}>
-                                            🔗 Open Link
+                                            🔗 Open SharePoint Link
                                         </a>
                                     </div>
                                 )}
-                                <div className="muted" style={{ fontSize: 11, marginTop: 4, color: "rgba(255,255,255,0.72)" }}>
+                                {t.attached_image && (
+                                    <div style={{ marginTop: 8 }}>
+                                        <a href={t.attached_image} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 6, overflow: "hidden" }}>
+                                            <img src={t.attached_image} alt="Task Image" style={{ height: 60, width: 80, objectFit: "cover", display: "block" }} />
+                                        </a>
+                                    </div>
+                                )}
+                                <div className="muted" style={{ fontSize: 11, marginTop: 6, color: "rgba(255,255,255,0.72)" }}>
                                     Created {t.created_at?.slice(0, 10)} {t.created_by_username && `by ${t.created_by_username}`}
                                     {t.due_date && <> · 📅 Due {t.due_date}</>}
                                 </div>

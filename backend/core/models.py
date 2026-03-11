@@ -428,6 +428,7 @@ class Task(models.Model):
         choices=TaskStatusChoices.choices,
         default=TaskStatusChoices.OPEN,
     )
+    attached_image = models.ImageField(upload_to="task_images/", blank=True, null=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
