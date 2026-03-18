@@ -16,7 +16,11 @@ export async function apiFetch(
     path,
     { method = "GET", body = null, needsCsrf = false } = {}
 ) {
-    const headers = { "Content-Type": "application/json" };
+    const isFormData = body instanceof FormData;
+    const headers = {};
+    if (!isFormData) {
+        headers["Content-Type"] = "application/json";
+    }
 
     if (needsCsrf) {
         const csrfToken = getCookie("csrftoken") || (await ensureCsrf());
@@ -29,7 +33,7 @@ export async function apiFetch(
         method,
         headers,
         credentials: "include",
-        body: body ? JSON.stringify(body) : null,
+        body: isFormData ? body : (body ? JSON.stringify(body) : null),
     });
 
     const text = await res.text();

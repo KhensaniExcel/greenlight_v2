@@ -124,6 +124,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "call_log", "service_provider_engagement",
             "task_type", "owner", "owner_username",
             "description", "sharepoint_link", "due_date", "status",
+            "attached_image",
             "created_by_username", "created_at", "updated_at",
         ]
         read_only_fields = ["created_by_username", "created_at", "updated_at"]

@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from core.session_auth_api import SessionLoginView, SessionLogoutView
 from core.csrf_api import CsrfView
 from core.api import MonthlyCallLogReportDownload
@@ -28,3 +30,6 @@ urlpatterns = [
     path("api/auth/session-login/", SessionLoginView.as_view()),
     path("api/auth/session-logout/", SessionLogoutView.as_view()),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
